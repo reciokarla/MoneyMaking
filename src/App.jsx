@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Download, FileText, Target, Zap, Shield, Clo
 import jsPDF from 'jspdf';
 
 const SCREENS = [
-  'Strategic Pre-Frame & Customer Deep Dive',
+  'Know Your Customer (Before You Pitch)',
   'Unique Solution & Unbreakable Promises', 
   'Objection Killing & Value Stacking',
   'Urgency, Scarcity & Ethical Motivation',
@@ -18,7 +18,8 @@ const OFFER_CATEGORIES = [
   'Physical Product',
   'Consulting',
   'Membership Site',
-  'Done-For-You Service'
+  'Done-For-You Service',
+  'Other (Please Specify)'
 ];
 
 const URGENCY_TRIGGERS = [
@@ -94,6 +95,7 @@ function App() {
     // Screen 1
     projectName: '',
     offerCategory: '',
+    customNiche: '',
     transformation: '',
     idealCustomer: '',
     beforeState: '',
@@ -118,7 +120,7 @@ function App() {
     unfairAdvantage: '',
     
     // Screen 3
-    objections: [],
+    objections: [{ objection: '', solution: '', neutralized: false }],
     selectedEnhancers: [],
     enhancerDetails: {},
     
@@ -145,10 +147,12 @@ function App() {
   };
 
   const addObjection = () => {
-    setFormData(prev => ({
-      ...prev,
-      objections: [...prev.objections, { objection: '', solution: '', neutralized: false }]
-    }));
+    if (formData.objections.length < 5) {
+      setFormData(prev => ({
+        ...prev,
+        objections: [...prev.objections, { objection: '', solution: '', neutralized: false }]
+      }));
+    }
   };
 
   const updateObjection = (index, field, value) => {
@@ -161,10 +165,12 @@ function App() {
   };
 
   const removeObjection = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      objections: prev.objections.filter((_, i) => i !== index)
-    }));
+    if (formData.objections.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        objections: prev.objections.filter((_, i) => i !== index)
+      }));
+    }
   };
 
   const toggleEnhancer = (enhancerId) => {
@@ -192,6 +198,17 @@ function App() {
   const neutralizedObjections = formData.objections.filter(obj => obj.neutralized).length;
   const totalObjections = formData.objections.length;
   const selectedEnhancersCount = formData.selectedEnhancers.length;
+
+  const getCharacterCount = (text) => {
+    return text ? text.length : 0;
+  };
+
+  const isFieldEmpty = (value) => {
+    if (Array.isArray(value)) {
+      return value.every(item => !item || item.trim() === '');
+    }
+    return !value || value.trim() === '';
+  };
 
   const generateHeadlines = () => {
     const { transformation, mechanismName, urgencyEnabled, enemy } = formData;
@@ -319,9 +336,29 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const renderWarning = (fieldName, condition) => {
+    if (condition) {
+      return (
+        <div className="warning-text">
+          ⚠️ This section is essential to building a powerful, persuasive offer. Leaving it blank may reduce the effectiveness of your final output. We highly recommend completing it before finalizing your offer.
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const renderCharacterCounter = (text, maxLength = 5000) => {
+    const count = getCharacterCount(text);
+    return (
+      <div className="character-counter">
+        🧮 Characters: {count} / {maxLength}
+      </div>
+    );
+  };
+
   const renderScreen1 = () => (
     <div className="card">
-      <h2 style={{ marginBottom: '24px', color: '#1f2937' }}>Strategic Pre-Frame & Customer Deep Dive</h2>
+      <h2 style={{ marginBottom: '24px', color: '#1f2937' }}>Know Your Customer (Before You Pitch)</h2>
       
       <div className="form-group">
         <label>Project Name</label>
@@ -337,16 +374,27 @@ function App() {
       </div>
 
       <div className="form-group">
-        <label>Primary Offer Category</label>
+        <label>Primary Niche</label>
         <select
           value={formData.offerCategory}
           onChange={(e) => updateFormData('offerCategory', e.target.value)}
         >
-          <option value="">Select category...</option>
+          <option value="">Select niche...</option>
           {OFFER_CATEGORIES.map(category => (
             <option key={category} value={category}>{category}</option>
           ))}
         </select>
+        {formData.offerCategory === 'Other (Please Specify)' && (
+          <div className="form-group" style={{ marginTop: '12px' }}>
+            <label>Enter your niche here</label>
+            <input
+              type="text"
+              value={formData.customNiche}
+              onChange={(e) => updateFormData('customNiche', e.target.value)}
+              placeholder="Specify your niche..."
+            />
+          </div>
+        )}
       </div>
 
       <div className="form-group">
@@ -363,6 +411,7 @@ function App() {
           • "Doubles qualified leads in 30 days"<br/>
           • "Transforms overwhelmed entrepreneurs into confident leaders"
         </div>
+        {renderWarning('transformation', isFieldEmpty(formData.transformation))}
       </div>
 
       <div className="form-group">
@@ -371,10 +420,15 @@ function App() {
           value={formData.idealCustomer}
           onChange={(e) => updateFormData('idealCustomer', e.target.value)}
           placeholder="Demographics and psychographics of your perfect buyer..."
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Example:</strong> "Busy, overwhelmed female entrepreneurs, 30-50, running service-based businesses, struggling with lead generation and time management, want more freedom and predictable income."
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
+        </div>
+        {renderCharacterCounter(formData.idealCustomer)}
       </div>
 
       <div className="form-group">
@@ -383,10 +437,15 @@ function App() {
           value={formData.beforeState}
           onChange={(e) => updateFormData('beforeState', e.target.value)}
           placeholder="Describe their emotional and practical state before your solution..."
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Example:</strong> "Overwhelmed by endless tasks, frustrated by inconsistent income, constantly stressed about finding new clients, feeling guilty about neglecting family."
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
+        </div>
+        {renderCharacterCounter(formData.beforeState)}
       </div>
 
       <div className="form-group">
@@ -395,10 +454,15 @@ function App() {
           value={formData.afterState}
           onChange={(e) => updateFormData('afterState', e.target.value)}
           placeholder="Describe their emotional and practical state after your solution..."
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Example:</strong> "Feel in control of their business, confident in their lead flow, enjoy predictable income, have more free time for family and hobbies, feel proud of their achievements."
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
+        </div>
+        {renderCharacterCounter(formData.afterState)}
       </div>
 
       <div className="form-group">
@@ -420,18 +484,29 @@ function App() {
           💡 Focus on specific, emotional pain points. What keeps them up at night? What tangible problems do they face?
         </div>
         {formData.painPoints.map((point, index) => (
-          <input
-            key={index}
-            type="text"
-            value={point}
-            onChange={(e) => updateArrayField('painPoints', index, e.target.value)}
-            placeholder={`Pain point ${index + 1}...`}
-            style={{ marginBottom: '8px' }}
-          />
+          <div key={index}>
+            <textarea
+              value={point}
+              onChange={(e) => updateArrayField('painPoints', index, e.target.value)}
+              placeholder={`Pain point ${index + 1}...`}
+              style={{ marginBottom: '8px' }}
+              maxLength={5000}
+            />
+            {index === 0 && (
+              <div className="example-box">
+                <strong>Examples:</strong> "Inconsistent lead flow," "Too much time on admin tasks," "Difficulty converting leads," "Lack of clear marketing strategy," "Burnout from juggling roles"
+              </div>
+            )}
+          </div>
         ))}
-        <div className="example-box">
-          <strong>Examples:</strong> "Inconsistent lead flow," "Too much time on admin tasks," "Difficulty converting leads," "Lack of clear marketing strategy," "Burnout from juggling roles"
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
         </div>
+        {renderCharacterCounter(formData.painPoints.join(''))}
+        <div className="additional-tooltip">
+          ⚠️ You may list more than 3–5 if needed. The stronger and more complete your answers, the more magnetic your final offer will be.
+        </div>
+        {renderWarning('painPoints', isFieldEmpty(formData.painPoints))}
       </div>
 
       <div className="form-group">
@@ -440,10 +515,15 @@ function App() {
           value={formData.selfSabotage}
           onChange={(e) => updateFormData('selfSabotage', e.target.value)}
           placeholder="What do they keep doing that isn't working? What emotional payoff keeps them stuck?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "Procrastinating on sales calls (fear of rejection)," "Trying every new shiny object (fear of missing out)," "Over-delivering for free (seeking validation)"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
+        </div>
+        {renderCharacterCounter(formData.selfSabotage)}
       </div>
 
       <div className="form-group">
@@ -452,10 +532,15 @@ function App() {
           value={formData.enemy}
           onChange={(e) => updateFormData('enemy', e.target.value)}
           placeholder="Who or what is misleading them, hurting them, keeping them stuck?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "The 'hustle culture' that promotes burnout," "Outdated marketing tactics that waste time," "Gurus selling quick fixes that don't work"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
+        </div>
+        {renderCharacterCounter(formData.enemy)}
       </div>
 
       <div className="form-group">
@@ -464,25 +549,39 @@ function App() {
           value={formData.previousAttempts}
           onChange={(e) => updateFormData('previousAttempts', e.target.value)}
           placeholder="Previous solutions they've attempted..."
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "They've downloaded 3 free lead magnets and still feel confused," "They've tried 5 diets and regained weight every time"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
+        </div>
+        {renderCharacterCounter(formData.previousAttempts)}
       </div>
 
       <div className="form-group">
         <label>Ultimate Dream</label>
         <div className="dream-map-note">
-          🎯 Also referred to as "Dream Mapping" — helps uncover the customer's emotional and lifestyle goals, as taught in Gary Halbert's frameworks.
+          💭 Also referred to as "Dream Mapping" — helps uncover the customer's emotional and lifestyle goals, so your offer speaks to what truly matters.
         </div>
         <textarea
           value={formData.ultimateDream}
           onChange={(e) => updateFormData('ultimateDream', e.target.value)}
           placeholder="What's their emotional/lifestyle goal?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Example:</strong> "Achieve financial freedom to travel the world with family, build a thriving business that runs without them"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full customer profiles, brainstorm notes, or swipe copy.
+        </div>
+        {renderCharacterCounter(formData.ultimateDream)}
+        <div className="additional-tooltip">
+          ⚠️ You may list more than 3–5 if needed. The stronger and more complete your answers, the more magnetic your final offer will be.
+        </div>
+        {renderWarning('ultimateDream', isFieldEmpty(formData.ultimateDream))}
       </div>
 
       <div className="form-group">
@@ -523,10 +622,15 @@ function App() {
           value={formData.coreProduct}
           onChange={(e) => updateFormData('coreProduct', e.target.value)}
           placeholder="What is the core product or service you are offering?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "A 12-week online coaching program for service-based entrepreneurs," "A SaaS platform for automated social media scheduling"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Use this space for full product descriptions, features, or detailed explanations.
+        </div>
+        {renderCharacterCounter(formData.coreProduct)}
       </div>
 
       <div className="form-group">
@@ -535,10 +639,15 @@ function App() {
           value={formData.biggestResult}
           onChange={(e) => updateFormData('biggestResult', e.target.value)}
           placeholder="What is the single, biggest, most transformative result your product delivers?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "Guaranteed 5-figure monthly revenue in 90 days," "Automates 80% of social media posting, saving 10 hours/week"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Focus on the most compelling outcome your customers will achieve.
+        </div>
+        {renderCharacterCounter(formData.biggestResult)}
       </div>
 
       <div className="form-group">
@@ -547,10 +656,16 @@ function App() {
           value={formData.mechanism}
           onChange={(e) => updateFormData('mechanism', e.target.value)}
           placeholder="What is the unique process that allows you to deliver this promise?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "Our proprietary 3-step 'Rapid Revenue System'," "The 'Mind-Body Alignment' technique," "AI-powered 'Smart Scheduling Algorithm'"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Describe your unique method, system, or approach in detail.
+        </div>
+        {renderCharacterCounter(formData.mechanism)}
+        {renderWarning('mechanism', isFieldEmpty(formData.mechanism))}
       </div>
 
       <div className="form-group">
@@ -572,10 +687,15 @@ function App() {
           value={formData.bigLie}
           onChange={(e) => updateFormData('bigLie', e.target.value)}
           placeholder="What false belief is holding your customer hostage?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Example:</strong> "You need to work 80 hours a week to succeed"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Identify the limiting belief that's preventing their success.
+        </div>
+        {renderCharacterCounter(formData.bigLie)}
       </div>
 
       <div className="form-group">
@@ -584,10 +704,15 @@ function App() {
           value={formData.truth}
           onChange={(e) => updateFormData('truth', e.target.value)}
           placeholder="What truth sets them free, and how does your offer reveal it?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Example:</strong> "Smart systems and targeted strategies allow you to work less and earn more, and our program shows you exactly how"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Explain the liberating truth and how your offer delivers it.
+        </div>
+        {renderCharacterCounter(formData.truth)}
       </div>
 
       <div className="form-group">
@@ -596,10 +721,15 @@ function App() {
           value={formData.proof}
           onChange={(e) => updateFormData('proof', e.target.value)}
           placeholder="What proof do you have? Case studies? Testimonials? Track record?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "50+ client testimonials with verifiable results," "Case study showing 300% ROI in 6 months," "Featured in Forbes and Entrepreneur magazine"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Include specific testimonials, case studies, or credentials.
+        </div>
+        {renderCharacterCounter(formData.proof)}
       </div>
 
       <div className="form-group">
@@ -608,10 +738,15 @@ function App() {
           value={formData.unfairAdvantage}
           onChange={(e) => updateFormData('unfairAdvantage', e.target.value)}
           placeholder="What makes your offer superior? Why you? Why now?"
+          maxLength={5000}
         />
         <div className="example-box">
           <strong>Examples:</strong> "Unlike other programs, we provide 1-on-1 weekly coaching calls," "We guarantee results or your money back, no questions asked"
         </div>
+        <div className="helper-text">
+          📝 You can write up to 5,000 characters. Explain what sets you apart from competitors.
+        </div>
+        {renderCharacterCounter(formData.unfairAdvantage)}
       </div>
     </div>
   );
@@ -650,15 +785,10 @@ function App() {
       </div>
 
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3>Neutralize Each Objection</h3>
-          <button className="button" onClick={addObjection}>
-            Add Objection
-          </button>
-        </div>
+        <h3 style={{ marginBottom: '16px' }}>Neutralize Each Objection</h3>
         
         <div className="helper-text" style={{ marginBottom: '16px' }}>
-          🎯 Provide a specific solution, guarantee, or bonus that directly eliminates this objection. Make it undeniable.
+          🛡️ Provide a specific solution, guarantee, or bonus that directly eliminates this objection. Make it undeniable.
         </div>
         
         {formData.objections.map((obj, index) => (
@@ -670,12 +800,14 @@ function App() {
                   {obj.neutralized ? '✅ Neutralized' : '🎯 Active Objection'}
                 </span>
               </div>
-              <button 
-                onClick={() => removeObjection(index)}
-                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer' }}
-              >
-                Remove
-              </button>
+              {formData.objections.length > 1 && (
+                <button 
+                  onClick={() => removeObjection(index)}
+                  style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer' }}
+                >
+                  Remove
+                </button>
+              )}
             </div>
             
             <div className="form-group" style={{ marginBottom: '12px' }}>
@@ -686,6 +818,11 @@ function App() {
                 onChange={(e) => updateObjection(index, 'objection', e.target.value)}
                 placeholder="e.g., It's too expensive, I don't have time..."
               />
+              {index === 0 && (
+                <div className="example-box">
+                  <strong>Common Objections:</strong> "It's too expensive," "I don't have time," "What if it doesn't work?," "I've tried this before," "I need to think about it"
+                </div>
+              )}
             </div>
             
             <div className="form-group">
@@ -694,21 +831,42 @@ function App() {
                 value={obj.solution}
                 onChange={(e) => updateObjection(index, 'solution', e.target.value)}
                 placeholder="How do you eliminate this objection? What feature, guarantee, or bonus addresses this?"
+                maxLength={5000}
               />
+              {index === 0 && (
+                <div className="example-box">
+                  <strong>Solutions:</strong> "Flexible payment plans + ROI calculator showing 5X potential earnings," "100% Money-Back Guarantee, no questions asked," "Designed for busy people, only 30 minutes/day required"
+                </div>
+              )}
+              <div className="helper-text">
+                📝 You can write up to 5,000 characters. Use this space for detailed objection handling strategies.
+              </div>
+              {renderCharacterCounter(obj.solution)}
             </div>
           </div>
         ))}
 
-        <div className="example-box">
-          <strong>Common Objections & Solutions:</strong><br/>
-          • "It's too expensive" → "Flexible payment plans + ROI calculator showing 5X potential earnings"<br/>
-          • "What if it doesn't work?" → "100% Money-Back Guarantee, no questions asked"<br/>
-          • "I don't have time" → "Designed for busy people, only 30 minutes/day required"
+        <div className="objection-helper-text">
+          🧠 Most offers face 2–3 big objections. Add another if you'd like to make your offer bulletproof.
         </div>
+
+        {formData.objections.length < 5 && (
+          <button className="button cta-button add-objection-button" onClick={addObjection}>
+            ➕ Add Another Objection
+          </button>
+        )}
+
+        <div className="additional-tooltip" style={{ marginTop: '16px' }}>
+          ⚠️ Leaving objections blank or only entering one weak answer will reduce the power of your final offer. Be as specific and thorough as possible.
+        </div>
+        {renderWarning('objections', formData.objections.every(obj => !obj.objection && !obj.solution))}
       </div>
 
       <div>
-        <h3 style={{ marginBottom: '16px' }}>Enhance Your Offer with '7 Types of Irresistible Offers'</h3>
+        <h3 style={{ marginBottom: '16px' }}>🧩 Enhance Your Offer by Choosing Between These 7 Value Boosters</h3>
+        <div style={{ marginBottom: '16px', fontSize: '0.95rem', color: '#6b7280', fontWeight: '500' }}>
+          💡 Use one or more to increase urgency, simplicity, or perceived value.
+        </div>
         <div className="enhancer-grid">
           {OFFER_ENHANCERS.map(enhancer => (
             <div key={enhancer.id}>
@@ -724,19 +882,25 @@ function App() {
           ))}
         </div>
 
-        {formData.selectedEnhancers.map(enhancerId => {
-          const enhancer = OFFER_ENHANCERS.find(e => e.id === enhancerId);
-          return (
-            <div key={enhancerId} className="form-group">
-              <label>{enhancer.title} - Details</label>
-              <textarea
-                value={formData.enhancerDetails[enhancerId] || ''}
-                onChange={(e) => updateEnhancerDetails(enhancerId, e.target.value)}
-                placeholder={`Describe how you'll implement ${enhancer.title.toLowerCase()}...`}
-              />
+        {OFFER_ENHANCERS.map(enhancer => (
+          <div key={enhancer.id} className="form-group">
+            <label>{enhancer.title} - Details</label>
+            <textarea
+              value={formData.enhancerDetails[enhancer.id] || ''}
+              onChange={(e) => updateEnhancerDetails(enhancer.id, e.target.value)}
+              placeholder={`Describe how you'll implement ${enhancer.title.toLowerCase()}...`}
+              maxLength={5000}
+            />
+            <div className="example-box">
+              <strong>Example for {enhancer.title}:</strong> {enhancer.description}
             </div>
-          );
-        })}
+            <div className="helper-text">
+              📝 Briefly explain how this makes your offer more appealing or valuable. Keep it simple and clear.
+            </div>
+            {renderCharacterCounter(formData.enhancerDetails[enhancer.id] || '')}
+            {renderWarning(`enhancer-${enhancer.id}`, isFieldEmpty(formData.enhancerDetails[enhancer.id]))}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -784,6 +948,7 @@ function App() {
               value={formData.urgencyDetails}
               onChange={(e) => updateFormData('urgencyDetails', e.target.value)}
               placeholder="Provide specific details for your chosen urgency trigger..."
+              maxLength={5000}
             />
             <div className="example-box">
               <strong>Examples:</strong><br/>
@@ -791,6 +956,10 @@ function App() {
               • "Only 50 spots available for this exclusive cohort"<br/>
               • "The bonus 1-on-1 strategy session disappears in 48 hours"
             </div>
+            <div className="helper-text">
+              📝 You can write up to 5,000 characters. Be specific about dates, quantities, or time limits.
+            </div>
+            {renderCharacterCounter(formData.urgencyDetails)}
           </div>
 
           <div className="form-group">
@@ -799,10 +968,15 @@ function App() {
               value={formData.emotionalUrgency}
               onChange={(e) => updateFormData('emotionalUrgency', e.target.value)}
               placeholder="What's the cost of waiting? Missed opportunity? More stress? More loss?"
+              maxLength={5000}
             />
             <div className="example-box">
               <strong>Example:</strong> "Every day you wait is another day you're losing potential clients to your competitors. Don't let self-doubt keep you stuck in the same cycle of inconsistent income."
             </div>
+            <div className="helper-text">
+              📝 You can write up to 5,000 characters. Focus on the emotional cost of inaction.
+            </div>
+            {renderCharacterCounter(formData.emotionalUrgency)}
           </div>
 
           <div className="form-group">
@@ -832,55 +1006,86 @@ function App() {
       <div className="output-section">
         <h3><Zap size={20} style={{ display: 'inline', marginRight: '8px' }} />Offer Headlines</h3>
         <div className="output-content">
-          {generateHeadlines().map((headline, index) => `${index + 1}. ${headline}`).join('\n\n')}
+          {generateHeadlines().length > 0 ? 
+            generateHeadlines().map((headline, index) => `${index + 1}. ${headline}`).join('\n\n') :
+            'Complete the previous screens to generate compelling headlines for your offer.'
+          }
+        </div>
+        <div className="example-box">
+          <strong>Example Headlines:</strong><br/>
+          • "Double Your Revenue Using Our Proven Client Attraction System"<br/>
+          • "The Freedom Formula That Transforms Overwhelmed Entrepreneurs (Even If You've Failed Before)"<br/>
+          • "Stop Chasing Clients - Attract Premium Customers With The Authority Method"
         </div>
       </div>
 
       <div className="output-section">
         <h3><FileText size={20} style={{ display: 'inline', marginRight: '8px' }} />Offer Summary</h3>
         <div className="output-content">
-          {generateOfferSummary()}
+          {formData.transformation && formData.mechanismName ? 
+            generateOfferSummary() :
+            'Complete the previous screens to generate your compelling offer summary.'
+          }
+        </div>
+        <div className="example-box">
+          <strong>Example Summary:</strong> "Discover how to double your revenue in 90 days using our proprietary Client Attraction System. This proven method delivers consistent 5-figure months, backed by 100+ success stories. We've eliminated every objection and obstacle that's been holding you back, giving you everything you need to succeed."
         </div>
       </div>
 
       <div className="output-section">
         <h3><Shield size={20} style={{ display: 'inline', marginRight: '8px' }} />Objection Killers</h3>
         <div className="output-content">
-          {formData.objections
-            .filter(obj => obj.neutralized)
-            .map((obj, index) => `${index + 1}. Problem: ${obj.objection}\n   Solution: ${obj.solution}`)
-            .join('\n\n')}
+          {formData.objections.filter(obj => obj.neutralized).length > 0 ?
+            formData.objections
+              .filter(obj => obj.neutralized)
+              .map((obj, index) => `${index + 1}. Problem: ${obj.objection}\n   Solution: ${obj.solution}`)
+              .join('\n\n') :
+            'Complete Screen 3 to show your neutralized objections here.'
+          }
         </div>
       </div>
 
       <div className="output-section">
         <h3><Target size={20} style={{ display: 'inline', marginRight: '8px' }} />Offer Enhancers</h3>
         <div className="output-content">
-          {formData.selectedEnhancers.map((enhancerId, index) => {
-            const enhancer = OFFER_ENHANCERS.find(e => e.id === enhancerId);
-            const details = formData.enhancerDetails[enhancerId];
-            return `${index + 1}. ${enhancer.title}: ${details || enhancer.description}`;
-          }).join('\n\n')}
+          {formData.selectedEnhancers.length > 0 ?
+            formData.selectedEnhancers.map((enhancerId, index) => {
+              const enhancer = OFFER_ENHANCERS.find(e => e.id === enhancerId);
+              const details = formData.enhancerDetails[enhancerId];
+              return `${index + 1}. ${enhancer.title}: ${details || enhancer.description}`;
+            }).join('\n\n') :
+            'Complete Screen 3 to show your selected offer enhancers here.'
+          }
         </div>
       </div>
 
       <div className="output-section">
         <h3><Clock size={20} style={{ display: 'inline', marginRight: '8px' }} />Psychological Triggers</h3>
         <div className="output-content">
-          {`Big Lie: ${formData.bigLie}
-Truth: ${formData.truth}
-Enemy: ${formData.enemy}
-Self-Sabotage: ${formData.selfSabotage}`}
+          {`Big Lie: ${formData.bigLie || 'Complete Screen 2 to define the big lie'}
+Truth: ${formData.truth || 'Complete Screen 2 to define the truth'}
+Enemy: ${formData.enemy || 'Complete Screen 1 to identify the enemy'}
+Self-Sabotage: ${formData.selfSabotage || 'Complete Screen 1 to identify self-sabotage patterns'}`}
         </div>
       </div>
 
       <div className="output-section">
         <h3>Call-to-Action Suggestions</h3>
         <div className="cta-context">
-          📝 Use these CTAs near the end of your sales page, email, or ad — they should match your offer's urgency trigger and make the next step feel safe and exciting. These are based on classic direct response templates.
+          💬 Use these CTAs near the end of your sales page, email, or ad — they should match your offer's urgency trigger and make the next step feel safe and exciting. These are based on classic direct response templates.
         </div>
         <div className="output-content">
           {generateCTAs().map((cta, index) => `${index + 1}. ${cta}`).join('\n')}
+        </div>
+        <div className="example-box">
+          <strong>CTA Examples:</strong><br/>
+          • "Ready to transform your business? Click here to enroll now and secure your spot before the deadline!"<br/>
+          • "Yes, I Want to Double My Revenue - Show Me How!"<br/>
+          • "Claim Your Transformation Today - Limited Spots Available"
+        </div>
+        
+        <div className="additional-tooltip">
+          ⚠️ A vague or missing CTA weakens conversion. The stronger and more confident your CTA, the more likely they'll click.
         </div>
         
         <div className="cta-examples-section">
@@ -900,6 +1105,7 @@ Self-Sabotage: ${formData.selfSabotage}`}
             ))}
           </div>
         </div>
+        {renderWarning('cta', generateCTAs().length === 0)}
       </div>
 
       <div className="checkbox-group">
@@ -940,7 +1146,7 @@ Self-Sabotage: ${formData.selfSabotage}`}
     <div className="container">
       <div className="header">
         <h1>MoneyMaking Offer AI</h1>
-        <p>Create irresistible offers that your customers can't refuse</p>
+        <p>Create money making offers without guessing what works</p>
       </div>
 
       <div className="progress-bar">
@@ -950,7 +1156,7 @@ Self-Sabotage: ${formData.selfSabotage}`}
         />
       </div>
 
-      <div style={{ textAlign: 'center', marginBottom: '24px', color: '#6b7280' }}>
+      <div style={{ textAlign: 'center', marginBottom: '24px', color: '#e5e7eb' }}>
         Step {currentScreen + 1} of {SCREENS.length}: {SCREENS[currentScreen]}
       </div>
 
